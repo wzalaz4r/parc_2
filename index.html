@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es" data-tema="claro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Control de asistencia con roles, llegadas tardías e informes por fecha. HTML, CSS y JavaScript puro.">
+  <title>Control de Asistencia</title>
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="fondo" id="fondo" aria-hidden="true"></div>
+
+  <!-- ============ LOGIN ============ -->
+  <section id="vista-login" class="login">
+    <div class="login-panel">
+      <form id="form-login" class="login-caja" novalidate>
+        <img id="login-logo" class="login-logo" src="assets/img/logo.svg" alt="Logo de la empresa">
+        <div class="login-titulos">
+          <h1>Control de Asistencia</h1>
+          <p class="muted" id="login-empresa">Comercial Andina S.A.</p>
+        </div>
+
+        <label class="campo">
+          <span>Usuario</span>
+          <input id="login-usuario" type="text" autocomplete="username" placeholder="ej. gerente" required>
+        </label>
+
+        <label class="campo">
+          <span>Contraseña</span>
+          <span class="campo-clave">
+            <input id="login-clave" type="password" autocomplete="current-password" placeholder="••••" required>
+            <button type="button" id="btn-ver-clave" class="btn-ver" aria-label="Mostrar contraseña">Ver</button>
+          </span>
+        </label>
+
+        <p id="login-error" class="aviso-error" role="alert" hidden></p>
+
+        <button class="btn btn-primario btn-ancho" type="submit">Entrar</button>
+
+        <div class="login-demo">
+          <span class="muted">Acceso rápido demo</span>
+          <div class="login-demo-botones">
+            <button type="button" class="chip-demo" data-demo="gerente">Gerente</button>
+            <button type="button" class="chip-demo" data-demo="asistente">Asistente</button>
+            <button type="button" class="chip-demo" data-demo="cajero">Cajero</button>
+          </div>
+        </div>
+
+        <p class="nota">Clave demo: <strong>1234</strong> · Los datos se guardan solo en este navegador.</p>
+      </form>
+
+      <aside class="login-lateral">
+        <h2>Asistencia clara,<br>informes al día.</h2>
+        <p>Registra entradas y salidas, detecta llegadas tardías automáticamente y genera informes por fecha listos para imprimir o exportar.</p>
+        <ul>
+          <li>Roles: cajero, asistente y gerente</li>
+          <li>Cálculo automático de tardanzas</li>
+          <li>Informes por día, rango o mes</li>
+          <li>Funciona sin internet ni librerías</li>
+        </ul>
+        <button type="button" id="btn-tema-login" class="btn btn-vidrio">Cambiar tema</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ APLICACIÓN ============ -->
+  <div id="app" hidden>
+    <header class="topbar">
+      <div class="topbar-izq">
+        <img id="logo-app" class="logo-mini" src="assets/img/logo.svg" alt="">
+        <div class="topbar-marca">
+          <strong id="empresa-nombre">Comercial Andina S.A.</strong>
+          <span class="topbar-sub">Control de asistencia</span>
+        </div>
+      </div>
+
+      <nav class="nav" id="nav" aria-label="Secciones"></nav>
+
+      <div class="topbar-der">
+        <span class="reloj" id="reloj" title="Hora actual">--:--</span>
+        <span class="usuario-chip" id="usuario-chip"></span>
+        <button class="btn-icono" id="btn-tema" type="button" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+        <button class="btn btn-suave btn-chico" id="btn-salir" type="button">Salir</button>
+      </div>
+    </header>
+
+    <main class="contenido">
+      <!-- PANEL -->
+      <section class="vista" id="vista-panel">
+        <div class="vista-cab">
+          <div>
+            <h2 id="panel-saludo">Hola</h2>
+            <p class="muted" id="panel-fecha"></p>
+          </div>
+          <button class="btn btn-primario" type="button" data-ir="marcaje">Registrar asistencia</button>
+        </div>
+
+        <div class="kpis" id="panel-kpis"></div>
+
+        <div class="grid-2">
+          <article class="tarjeta">
+            <div class="tarjeta-cab">
+              <h3>Asistencia de hoy</h3>
+              <span class="muted" id="panel-actualizado"></span>
+            </div>
+            <div id="panel-hoy" class="panel-lista"></div>
+          </article>
+
+          <article class="tarjeta">
+            <div class="tarjeta-cab">
+              <h3 id="panel-secundario-titulo">Pendientes de hoy</h3>
+            </div>
+            <div id="panel-secundario" class="panel-lista"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- MARCAJE -->
+      <section class="vista" id="vista-marcaje" hidden>
+        <div class="vista-cab">
+          <div>
+            <h2>Registro de asistencia</h2>
+            <p class="muted" id="marcaje-ayuda">Marca la entrada, la salida y el estado con un clic.</p>
+          </div>
+          <button class="btn btn-suave" type="button" id="btn-todos">Marcar todos presentes</button>
+        </div>
+
+        <div class="barra-filtros">
+          <label class="campo-filtro">
+            <span>Fecha</span>
+            <input type="date" id="marcaje-fecha">
+          </label>
+          <label class="campo-filtro">
+            <span>Buscar</span>
+            <input type="search" id="marcaje-buscar" placeholder="Nombre o cargo…">
+          </label>
+          <span class="filtro-info muted" id="marcaje-info"></span>
+        </div>
+
+        <div id="marcaje-lista" class="grid-cards"></div>
+      </section>
+
+      <!-- EMPLEADOS -->
+      <section class="vista" id="vista-empleados" hidden>
+        <div class="vista-cab">
+          <div>
+            <h2>Empleados</h2>
+            <p class="muted">Altas, fotos y horarios. La foto se optimiza antes de guardarse.</p>
+          </div>
+          <button class="btn btn-primario" type="button" id="btn-nuevo-emp">Nuevo empleado</button>
+        </div>
+
+        <div class="barra-filtros">
+          <label class="campo-filtro campo-ancho">
+            <span>Buscar</span>
+            <input type="search" id="emp-buscar" placeholder="Nombre, cargo o área…">
+          </label>
+          <span class="filtro-info muted" id="emp-info"></span>
+        </div>
+
+        <div id="emp-lista" class="grid-cards"></div>
+      </section>
+
+      <!-- REPORTES -->
+      <section class="vista" id="vista-reportes" hidden>
+        <div class="impresion-cabecera" id="rep-impresion">
+          <img id="rep-logo" src="assets/img/logo.svg" alt="">
+          <div>
+            <strong id="rep-empresa">Comercial Andina S.A.</strong>
+            <span id="rep-rango"></span>
+          </div>
+          <span id="rep-generado"></span>
+        </div>
+
+        <div class="vista-cab no-imprimir">
+          <div>
+            <h2>Informes de asistencia</h2>
+            <p class="muted">Clasificados por fecha, con totales y resumen por empleado.</p>
+          </div>
+          <div class="acciones">
+            <button class="btn btn-suave" type="button" id="btn-csv">Exportar CSV</button>
+            <button class="btn btn-primario" type="button" id="btn-imprimir">Imprimir / PDF</button>
+          </div>
+        </div>
+
+        <div class="no-imprimir">
+          <div class="chips" id="chips-rango" role="group" aria-label="Rangos rápidos">
+            <label class="etiqueta" data-tono="info">
+              <input type="radio" name="rango-rapido" value="hoy"><span>Hoy</span>
+            </label>
+            <label class="etiqueta" data-tono="info">
+              <input type="radio" name="rango-rapido" value="ayer"><span>Ayer</span>
+            </label>
+            <label class="etiqueta" data-tono="info">
+              <input type="radio" name="rango-rapido" value="semana"><span>Últimos 7 días</span>
+            </label>
+            <label class="etiqueta" data-tono="info" checked>
+              <input type="radio" name="rango-rapido" value="mes" checked><span>Este mes</span>
+            </label>
+          </div>
+
+          <div class="barra-filtros">
+            <label class="campo-filtro">
+              <span>Desde</span>
+              <input type="date" id="rep-desde">
+            </label>
+            <label class="campo-filtro">
+              <span>Hasta</span>
+              <input type="date" id="rep-hasta">
+            </label>
+            <label class="campo-filtro">
+              <span>Empleado</span>
+              <select id="rep-empleado"></select>
+            </label>
+            <label class="campo-filtro">
+              <span>Estado</span>
+              <select id="rep-estado">
+                <option value="">Todos</option>
+                <option value="puntual">Puntual</option>
+                <option value="tarde">Tarde</option>
+                <option value="ausente">Ausente</option>
+                <option value="permiso">Permiso</option>
+                <option value="vacaciones">Vacaciones</option>
+              </select>
+            </label>
+            <label class="campo-filtro campo-ancho">
+              <span>Buscar</span>
+              <input type="search" id="rep-buscar" placeholder="Nombre o cargo…">
+            </label>
+          </div>
+        </div>
+
+        <div class="kpis" id="rep-kpis"></div>
+
+        <article class="tarjeta no-imprimir">
+          <div class="tarjeta-cab">
+            <h3>Asistencia por día</h3>
+            <div class="leyenda" id="rep-leyenda"></div>
+          </div>
+          <canvas id="rep-chart" height="260" aria-label="Gráfico de asistencia por día" role="img"></canvas>
+        </article>
+
+        <div id="rep-dias"></div>
+
+        <article class="tarjeta">
+          <div class="tarjeta-cab">
+            <h3>Resumen por empleado</h3>
+          </div>
+          <div class="tabla-scroll" id="rep-resumen"></div>
+        </article>
+      </section>
+
+      <!-- CONFIGURACIÓN -->
+      <section class="vista" id="vista-config" hidden>
+        <div class="vista-cab">
+          <div>
+            <h2>Configuración</h2>
+            <p class="muted">Solo el gerente puede modificar estos valores.</p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <article class="tarjeta">
+            <h3>Empresa y reglas</h3>
+            <form id="form-config" class="form-grid">
+              <label class="campo">
+                <span>Nombre de la empresa</span>
+                <input id="cfg-empresa" type="text" required>
+              </label>
+              <label class="campo">
+                <span>Tolerancia de tardanza (min)</span>
+                <input id="cfg-tolerancia" type="number" min="0" max="120" required>
+              </label>
+              <label class="campo">
+                <span>Descanso descontado (min)</span>
+                <input id="cfg-descanso" type="number" min="0" max="120" required>
+              </label>
+              <p class="nota">La tardanza se calcula contra el horario de cada empleado. Ej.: entrada 08:00 + 10 min de tolerancia = 08:10.</p>
+              <button class="btn btn-primario" type="submit">Guardar configuración</button>
+            </form>
+          </article>
+
+          <article class="tarjeta">
+            <h3>Imágenes</h3>
+            <div class="form-grid">
+              <div class="imagen-config">
+                <img id="cfg-logo-preview" src="assets/img/logo.svg" alt="Vista previa del logo">
+                <div>
+                  <strong>Logo</strong>
+                  <label class="btn btn-suave btn-chico">
+                    Cambiar logo
+                    <input type="file" id="cfg-logo-input" accept="image/*" hidden>
+                  </label>
+                </div>
+              </div>
+              <div class="imagen-config">
+                <img id="cfg-fondo-preview" src="assets/img/fondo.svg" alt="Vista previa del fondo">
+                <div>
+                  <strong>Fondo de pantalla</strong>
+                  <label class="btn btn-suave btn-chico">
+                    Cambiar fondo
+                    <input type="file" id="cfg-fondo-input" accept="image/*" hidden>
+                  </label>
+                </div>
+              </div>
+              <button class="btn btn-suave" type="button" id="btn-restaurar-imagenes">Restaurar imágenes por defecto</button>
+            </div>
+          </article>
+
+          <article class="tarjeta">
+            <h3>Datos</h3>
+            <p class="muted">Todo se guarda en <code>localStorage</code>. Sirve para probar la app, no para uso multiusuario real.</p>
+            <div class="acciones">
+              <button class="btn btn-suave" type="button" id="btn-backup">Descargar respaldo JSON</button>
+              <button class="btn btn-peligro" type="button" id="btn-reset">Restablecer datos demo</button>
+            </div>
+            <p class="nota" id="cfg-peso"></p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+      <header class="modal-cab">
+        <h2 id="modal-titulo">Título</h2>
+        <button type="button" class="btn-icono" id="modal-cerrar" aria-label="Cerrar">✕</button>
+      </header>
+      <div id="modal-cuerpo" class="modal-cuerpo"></div>
+    </div>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
